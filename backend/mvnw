@@ -1,0 +1,26 @@
+#!/bin/sh
+# ----------------------------------------------------------------------------
+# Maven Wrapper Shell Script for Margdarshi Backend
+# ----------------------------------------------------------------------------
+
+PRG="$0"
+while [ -h "$PRG" ]; do
+  ls=$(ls -ld "$PRG")
+  link=$(expr "$ls" : '.*-> \(.*\)$')
+  if expr "$link" : '/.*' > /dev/null; then
+    PRG="$link"
+  else
+    PRG=$(dirname "$PRG")"/$link"
+  fi
+done
+
+BASE_DIR=$(cd "$(dirname "$PRG")" && pwd)
+WRAPPER_JAR="$BASE_DIR/.mvn/wrapper/maven-wrapper.jar"
+
+if [ -n "$JAVA_HOME" ]; then
+  JAVACMD="$JAVA_HOME/bin/java"
+else
+  JAVACMD="java"
+fi
+
+exec "$JAVACMD" -Dmaven.multiModuleProjectDirectory="$BASE_DIR" -cp "$WRAPPER_JAR" org.apache.maven.wrapper.MavenWrapperMain "$@"
