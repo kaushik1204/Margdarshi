@@ -223,10 +223,15 @@ class ApiClient {
       });
     },
 
-    updateStageProgress: async (applicationId: string, stageId: string, status?: 'PENDING' | 'COMPLETED' | 'FAILED'): Promise<StageProgressRecord> => {
+    updateStageProgress: async (
+      applicationId: string,
+      stageId: string,
+      status?: 'PENDING' | 'COMPLETED' | 'FAILED',
+      extra?: Record<string, any>
+    ): Promise<StageProgressRecord> => {
       return this.request<StageProgressRecord>(`/applications/${applicationId}/stages`, {
         method: 'POST',
-        body: JSON.stringify({ stageId, status }),
+        body: JSON.stringify({ stageId, status, ...(extra || {}) }),
       });
     },
   };

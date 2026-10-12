@@ -18,6 +18,8 @@ interface PerDriveDashboardViewProps {
   onConfirmStageProgress: (applicationId: string, stageId: string) => void;
   onRecordResult?: (studentId: string, driveId: string, result: 'SELECTED' | 'REJECTED', pkg: string) => void;
   onUpdateStages?: (driveId: string, updatedStages: RecruitmentStageItem[]) => void;
+  onEndDrive?: (driveId: string) => void;
+  onReopenDrive?: (driveId: string) => void;
   onBack: () => void;
 }
 
@@ -29,10 +31,20 @@ export const PerDriveDashboardView: React.FC<PerDriveDashboardViewProps> = ({
   results,
   onConfirmStageProgress,
   onUpdateStages,
+  onEndDrive,
+  onReopenDrive,
   onBack,
 }) => {
   // Drill-down stage ID. If null, displays the centerpiece aggregate-only dashboard!
   const [drillDownStageId, setDrillDownStageId] = useState<string | null>(null);
+  const [isEndDriveConfirmOpen, setIsEndDriveConfirmOpen] = useState(false);
+  const [viewingReviewRow, setViewingReviewRow] = useState<{
+    studentName: string;
+    outcome?: string;
+    difficulty?: string;
+    confidence?: number;
+    notes?: string;
+  } | null>(null);
 
   // Modal to manage / add / reorder recruitment stages (levels)
   const [isManageStagesOpen, setIsManageStagesOpen] = useState(false);
@@ -70,6 +82,24 @@ export const PerDriveDashboardView: React.FC<PerDriveDashboardViewProps> = ({
     );
     const result = results.find((r) => r.driveId === drive.id && r.studentId === app.studentId);
 
+    let outcome = progress?.roundOutcome;
+    let difficulty = progress?.difficultyRating;
+    let confidence = progress?.confidenceRating;
+    let notes = progress?.experienceNotes;
+
+    try {
+      const saved = localStorage.getItem(`stage_feedback_${app.id}_${drillDownStageId}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (!outcome && parsed.outcome) outcome = parsed.outcome;
+        if (!difficulty && parsed.difficulty) difficulty = parsed.difficulty;
+        if (!confidence && parsed.confidence) confidence = parsed.confidence;
+        if (!notes && parsed.notes) notes = parsed.notes;
+      }
+    } catch {
+      // ignore
+    }
+
     return {
       application: app,
       student: student || {
@@ -89,6 +119,10 @@ export const PerDriveDashboardView: React.FC<PerDriveDashboardViewProps> = ({
       },
       progress,
       result,
+      outcome,
+      difficulty,
+      confidence,
+      notes,
     };
   });
 
@@ -163,6 +197,38 @@ export const PerDriveDashboardView: React.FC<PerDriveDashboardViewProps> = ({
         </div>
 
         <div className="flex items-center gap-2.5">
+          {drive.status === 'Active' ? (
+            onEndDrive && (
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setIsEndDriveConfirmOpen(true)}
+                className="h-9 px-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold hover:bg-rose-100 transition-all cursor-pointer shadow-2xs flex items-center gap-1.5"
+                title="Conclude recruitment cycle and end this drive"
+              >
+                <span className="material-symbols-outlined text-[16px]">flag</span>
+                <span>End Placement Drive</span>
+              </motion.button>
+            )
+          ) : (
+            <div className="flex items-center gap-2">
+              <span className="h-9 px-3 rounded-xl bg-slate-100 border border-slate-200 text-slate-600 text-xs font-semibold flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[16px] text-slate-400">check_circle</span>
+                <span>Drive Completed</span>
+              </span>
+              {onReopenDrive && (
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => onReopenDrive(drive.id)}
+                  className="h-9 px-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold hover:bg-emerald-100 transition-all cursor-pointer flex items-center gap-1"
+                  title="Reactivate this completed drive"
+                >
+                  <span className="material-symbols-outlined text-[15px]">refresh</span>
+                  <span>Reopen</span>
+                </motion.button>
+              )}
+            </div>
+          )}
+
           <motion.button
             whileTap={{ scale: 0.98 }}
             onClick={() => setIsManageStagesOpen(true)}
@@ -360,6 +426,7 @@ export const PerDriveDashboardView: React.FC<PerDriveDashboardViewProps> = ({
                   <th className="py-3 px-3">Roll No</th>
                   <th className="py-3 px-3">Company Ref ID</th>
                   <th className="py-3 px-3">Stage Status</th>
+                  <th className="py-3 px-3">Candidate Outcome</th>
                   <th className="py-3 px-3">Reported By</th>
                   <th className="py-3 px-4 text-right">Verification Action</th>
                 </tr>
@@ -393,6 +460,49 @@ export const PerDriveDashboardView: React.FC<PerDriveDashboardViewProps> = ({
                             <span>Pending</span>
                           </span>
                         )}
+                      </td>
+                      <td className="py-3 px-3">
+                        <div className="flex flex-col items-start gap-1">
+                          {row.outcome === 'CLEARED' && (
+                            <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-semibold flex items-center gap-1">
+                              <span className="material-symbols-outlined text-[13px]">check_circle</span>
+                              <span>Cleared</span>
+                            </span>
+                          )}
+                          {row.outcome === 'AWAITING_RESULT' && (
+                            <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 text-[11px] font-semibold flex items-center gap-1">
+                              <span className="material-symbols-outlined text-[13px]">hourglass_top</span>
+                              <span>Awaiting Results</span>
+                            </span>
+                          )}
+                          {row.outcome === 'NOT_CLEARED' && (
+                            <span className="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200 text-[11px] font-semibold flex items-center gap-1">
+                              <span className="material-symbols-outlined text-[13px]">cancel</span>
+                              <span>Did Not Clear</span>
+                            </span>
+                          )}
+                          {!row.outcome && (
+                            <span className="text-slate-400 text-xs font-mono">-</span>
+                          )}
+                          {(row.notes || row.difficulty || row.confidence) && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setViewingReviewRow({
+                                  studentName: row.student.name,
+                                  outcome: row.outcome,
+                                  difficulty: row.difficulty,
+                                  confidence: row.confidence,
+                                  notes: row.notes,
+                                })
+                              }
+                              className="text-[11px] text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-0.5 cursor-pointer hover:underline"
+                            >
+                              <span className="material-symbols-outlined text-[13px]">reviews</span>
+                              <span>View Review</span>
+                            </button>
+                          )}
+                        </div>
                       </td>
                       <td className="py-3 px-3">
                         {isConfirmed ? (
@@ -564,6 +674,170 @@ export const PerDriveDashboardView: React.FC<PerDriveDashboardViewProps> = ({
                 >
                   Save Levels
                 </motion.button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* End Drive Confirmation Modal */}
+      <AnimatePresence>
+        {isEndDriveConfirmOpen && (
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 flex flex-col gap-4"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-2xl">flag</span>
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 font-display">
+                    End Placement Drive?
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Conclude recruiting cycle for {drive.companyName}
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-700 leading-relaxed">
+                <p>
+                  Are you sure you want to conclude the placement drive for{' '}
+                  <strong className="text-slate-900 font-semibold">{drive.companyName}</strong> (
+                  <strong className="text-slate-900 font-semibold">{drive.roleTitle}</strong>)?
+                </p>
+                <p className="mt-2 text-slate-500">
+                  This will transition the drive status to <strong>Completed</strong>. Candidates will see this drive marked as finalized.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsEndDriveConfirmOpen(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onEndDrive) {
+                      onEndDrive(drive.id);
+                      setIsEndDriveConfirmOpen(false);
+                    }
+                  }}
+                  className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                  <span>Confirm & End Drive</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL: View Candidate Round Review & Feedback */}
+      <AnimatePresence>
+        {viewingReviewRow && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs"
+              onClick={() => setViewingReviewRow(null)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 8 }}
+              className="relative z-10 bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200/90 flex flex-col gap-4"
+            >
+              <div className="flex items-start justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-[22px]">rate_review</span>
+                  </div>
+                  <div>
+                    <span className="text-[11px] font-semibold text-blue-600 uppercase font-mono">
+                      Candidate Feedback
+                    </span>
+                    <h3 className="text-base font-bold text-slate-900 font-display">
+                      {viewingReviewRow.studentName}
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      {activeStage?.name || 'Recruitment Round'} · {drive.companyName}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setViewingReviewRow(null)}
+                  className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[18px]">close</span>
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-3 text-xs">
+                {/* Result Outcome */}
+                <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
+                  <span className="text-slate-500 font-medium">Reported Outcome</span>
+                  <span className="font-bold text-slate-800">
+                    {viewingReviewRow.outcome === 'CLEARED'
+                      ? 'Cleared / Passed Round'
+                      : viewingReviewRow.outcome === 'AWAITING_RESULT'
+                      ? 'Awaiting Results'
+                      : viewingReviewRow.outcome === 'NOT_CLEARED'
+                      ? 'Did Not Clear'
+                      : 'Self-Reported Attendance'}
+                  </span>
+                </div>
+
+                {/* Metrics */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex flex-col gap-0.5">
+                    <span className="text-[11px] text-slate-400 font-medium">Difficulty Level</span>
+                    <span className="text-xs font-bold text-slate-800">
+                      {viewingReviewRow.difficulty || 'Not specified'}
+                    </span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex flex-col gap-0.5">
+                    <span className="text-[11px] text-slate-400 font-medium">Confidence Rating</span>
+                    <span className="text-xs font-bold text-amber-600">
+                      {viewingReviewRow.confidence ? `★ ${viewingReviewRow.confidence} / 5` : 'Not rated'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Candidate Notes */}
+                {viewingReviewRow.notes && (
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[15px] text-blue-600">chat</span>
+                      <span>How was it? Candidate Experience Notes</span>
+                    </label>
+                    <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 leading-relaxed italic text-xs">
+                      "{viewingReviewRow.notes}"
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setViewingReviewRow(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold transition-colors cursor-pointer"
+                >
+                  Close
+                </button>
               </div>
             </motion.div>
           </div>

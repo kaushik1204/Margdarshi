@@ -27,6 +27,7 @@ export const EditCriteriaModal: React.FC<EditCriteriaModalProps> = ({
   const [maxBacklogs, setMaxBacklogs] = useState<number>(drive?.criteria.maxBacklogs || 0);
   const [min10th, setMin10th] = useState<number>(drive?.criteria.min10thPercentage || 75);
   const [min12th, setMin12th] = useState<number>(drive?.criteria.min12thPercentage || 75);
+  const [graduationYear, setGraduationYear] = useState<number>(drive?.criteria.graduationYear || 2026);
 
   useEffect(() => {
     if (students && students.length > 0) {
@@ -43,6 +44,7 @@ export const EditCriteriaModal: React.FC<EditCriteriaModalProps> = ({
       setMaxBacklogs(drive.criteria.maxBacklogs);
       setMin10th(drive.criteria.min10thPercentage);
       setMin12th(drive.criteria.min12thPercentage);
+      setGraduationYear(drive.criteria.graduationYear || 2026);
     }
   }, [drive]);
 
@@ -67,7 +69,7 @@ export const EditCriteriaModal: React.FC<EditCriteriaModalProps> = ({
       maxBacklogs,
       min10thPercentage: min10th,
       min12thPercentage: min12th,
-      graduationYear: drive.criteria.graduationYear || 2026,
+      graduationYear,
     }).isEligible
   ).length;
 
@@ -81,7 +83,7 @@ export const EditCriteriaModal: React.FC<EditCriteriaModalProps> = ({
         maxBacklogs,
         min10thPercentage: min10th,
         min12thPercentage: min12th,
-        graduationYear: drive.criteria.graduationYear || 2026,
+        graduationYear,
       },
       estimatedEligible
     );
@@ -138,6 +140,48 @@ export const EditCriteriaModal: React.FC<EditCriteriaModalProps> = ({
             <span className="text-2xl font-bold text-blue-600 font-mono tabular-nums">
               {estimatedEligible} Students
             </span>
+          </div>
+
+          {/* Eligible Student Year / Graduation Batch */}
+          <div className="flex flex-col gap-2 p-3 bg-blue-50/50 rounded-xl border border-blue-100">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[16px] text-blue-600">school</span>
+                <span>Target Student Year / Batch</span>
+              </label>
+              <span className="text-[10px] text-blue-700 font-medium font-mono">
+                {graduationYear > 0 ? `${graduationYear} Cohort` : 'All Batches'}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-1.5">
+              {[
+                { value: 2026, title: '2026 Batch', desc: '4th / Final' },
+                { value: 2027, title: '2027 Batch', desc: '3rd / Pre-Final' },
+                { value: 2028, title: '2028 Batch', desc: '2nd Year' },
+                { value: 2029, title: '2029 Batch', desc: '1st Year' },
+                { value: 0, title: 'All Years', desc: 'Open to All' },
+              ].map((opt) => {
+                const isSelected = graduationYear === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setGraduationYear(opt.value)}
+                    className={`p-2 rounded-lg text-left transition-all border cursor-pointer ${
+                      isSelected
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100/70'
+                    }`}
+                  >
+                    <div className="text-xs font-bold leading-tight">{opt.title}</div>
+                    <div className={`text-[10px] mt-0.5 ${isSelected ? 'text-blue-100' : 'text-slate-400'}`}>
+                      {opt.desc}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3.5">

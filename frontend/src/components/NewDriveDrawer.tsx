@@ -34,6 +34,8 @@ export const NewDriveDrawer: React.FC<NewDriveDrawerProps> = ({
     'ECE',
     'AIML',
   ]);
+  const [targetGradYear, setTargetGradYear] = useState<string>('2026');
+  const [customGradYear, setCustomGradYear] = useState<string>('');
 
   // Dynamic recruitment stages (levels) configurable by coordinator
   const [stagesList, setStagesList] = useState<string[]>([
@@ -113,6 +115,12 @@ export const NewDriveDrawer: React.FC<NewDriveDrawerProps> = ({
     const parsedMaxBacklogs = maxBacklogs ? parseInt(maxBacklogs, 10) : 0;
     const parsedMin10th = min10th ? parseFloat(min10th) : 0;
     const parsedMin12th = min12th ? parseFloat(min12th) : 0;
+    const parsedGradYear =
+      targetGradYear === '0' || targetGradYear === 'all'
+        ? 0
+        : targetGradYear === 'custom'
+        ? (parseInt(customGradYear, 10) || 0)
+        : (parseInt(targetGradYear, 10) || 2026);
 
     const newDrive: PlacementDrive = {
       id: driveId,
@@ -137,6 +145,7 @@ export const NewDriveDrawer: React.FC<NewDriveDrawerProps> = ({
         minCgpa: parsedMinCgpa,
         allowedBranches: selectedBranches.length ? selectedBranches : ['ALL'],
         maxBacklogs: parsedMaxBacklogs,
+        graduationYear: parsedGradYear,
         min10thPercentage: parsedMin10th,
         min12thPercentage: parsedMin12th,
       },
@@ -316,6 +325,62 @@ export const NewDriveDrawer: React.FC<NewDriveDrawerProps> = ({
             <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider font-mono">
               Academic Eligibility Cutoffs
             </span>
+
+            {/* Year of Students Who Can Apply / Graduation Batch */}
+            <div className="flex flex-col gap-2 p-3 bg-blue-50/50 rounded-xl border border-blue-100">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[16px] text-blue-600">school</span>
+                  <span>Eligible Student Year / Batch *</span>
+                </label>
+                <span className="text-[10px] text-blue-700 font-medium">Who can apply</span>
+              </div>
+              
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                {[
+                  { value: '2026', title: '2026 Batch', desc: '4th Year / Final' },
+                  { value: '2027', title: '2027 Batch', desc: '3rd Year / Pre-Final' },
+                  { value: '2028', title: '2028 Batch', desc: '2nd Year' },
+                  { value: '2029', title: '2029 Batch', desc: '1st Year' },
+                  { value: 'all', title: 'Open to All', desc: 'Any Student Year' },
+                  { value: 'custom', title: 'Custom Batch', desc: 'Enter Year' },
+                ].map((opt) => {
+                  const isSelected = targetGradYear === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setTargetGradYear(opt.value)}
+                      className={`p-2 rounded-lg text-left transition-all border cursor-pointer ${
+                        isSelected
+                          ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
+                          : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100/70'
+                      }`}
+                    >
+                      <div className="text-xs font-bold leading-tight">{opt.title}</div>
+                      <div className={`text-[10px] mt-0.5 ${isSelected ? 'text-blue-100' : 'text-slate-400'}`}>
+                        {opt.desc}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {targetGradYear === 'custom' && (
+                <div className="mt-1 flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="2020"
+                    max="2035"
+                    value={customGradYear}
+                    onChange={(e) => setCustomGradYear(e.target.value)}
+                    placeholder="Enter Graduation Year e.g. 2025"
+                    className="w-full h-9 px-3 rounded-lg bg-white border border-blue-300 text-xs text-slate-900 font-mono outline-none focus:ring-2 focus:ring-blue-200"
+                    autoFocus
+                  />
+                </div>
+              )}
+            </div>
 
             <div className="grid grid-cols-2 gap-3.5">
               <div className="flex flex-col gap-1.5">

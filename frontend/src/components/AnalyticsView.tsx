@@ -73,7 +73,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
             Placement Analytics & Verified Outcomes
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Season 2024–25 · Verified data computed exclusively from active applicant and selection rows.
+            Season 2026–2027 · Verified data computed exclusively from active applicant and selection rows.
           </p>
         </div>
         <motion.button

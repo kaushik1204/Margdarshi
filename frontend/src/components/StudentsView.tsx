@@ -252,7 +252,7 @@ export const StudentsView: React.FC<StudentsViewProps> = ({ students }) => {
               Official University Registry
             </span>
             <span className="text-xs text-slate-400 font-mono">•</span>
-            <span className="text-xs font-mono text-slate-500">Academic Year 2024–2026</span>
+            <span className="text-xs font-mono text-slate-500">Academic Year 2026–2027</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-serif font-bold text-slate-900 tracking-tight">
             Student Master Directory

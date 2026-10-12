@@ -10,6 +10,8 @@ interface CompaniesDrivesViewProps {
   onOpenCriteria: (drive: PlacementDrive) => void;
   onOpenSummary: (drive: PlacementDrive) => void;
   onOpenPerDriveDashboard?: (drive: PlacementDrive) => void;
+  onEndDrive?: (driveId: string) => void;
+  onReopenDrive?: (driveId: string) => void;
 }
 
 export const CompaniesDrivesView: React.FC<CompaniesDrivesViewProps> = ({
@@ -20,11 +22,14 @@ export const CompaniesDrivesView: React.FC<CompaniesDrivesViewProps> = ({
   onOpenCriteria,
   onOpenSummary,
   onOpenPerDriveDashboard,
+  onEndDrive,
+  onReopenDrive,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTier, setSelectedTier] = useState<string>('all');
-  const [selectedSeason, setSelectedSeason] = useState<string>('2025-26');
+  const [selectedSeason, setSelectedSeason] = useState<string>('2026-27');
   const [activeTab, setActiveTab] = useState<'all' | 'active' | 'completed' | 'drafts'>('all');
+  const [driveToEnd, setDriveToEnd] = useState<PlacementDrive | null>(null);
 
   const [expandedCompanies, setExpandedCompanies] = useState<Record<string, boolean>>({
     google: true,
@@ -232,7 +237,8 @@ export const CompaniesDrivesView: React.FC<CompaniesDrivesViewProps> = ({
                 onChange={(e) => setSelectedSeason(e.target.value)}
                 className="bg-transparent font-semibold text-xs text-slate-800 outline-none cursor-pointer"
               >
-                <option value="2025-26">2025 - 2026 (Active)</option>
+                <option value="2026-27">2026 - 2027 (Active)</option>
+                <option value="2025-26">2025 - 2026 (Archived)</option>
                 <option value="2024-25">2024 - 2025 (Archived)</option>
               </select>
             </div>
@@ -438,7 +444,7 @@ export const CompaniesDrivesView: React.FC<CompaniesDrivesViewProps> = ({
                             </div>
 
                             {/* Action Buttons */}
-                            <div className="flex items-center gap-2 shrink-0 self-end xl:self-auto">
+                            <div className="flex items-center gap-2 shrink-0 self-end xl:self-auto flex-wrap justify-end">
                               {!isComplete ? (
                                 <>
                                   <motion.button
@@ -469,15 +475,39 @@ export const CompaniesDrivesView: React.FC<CompaniesDrivesViewProps> = ({
                                   >
                                     Manage Drive
                                   </motion.button>
+                                  {onEndDrive && (
+                                    <motion.button
+                                      whileTap={{ scale: 0.98 }}
+                                      onClick={() => setDriveToEnd(drive)}
+                                      className="h-8 px-2.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold border border-rose-200 transition-colors flex items-center gap-1 cursor-pointer"
+                                      title="Conclude recruitment cycle and end this drive"
+                                    >
+                                      <span className="material-symbols-outlined text-[15px]">flag</span>
+                                      <span>End Drive</span>
+                                    </motion.button>
+                                  )}
                                 </>
                               ) : (
-                                <motion.button
-                                  whileTap={{ scale: 0.98 }}
-                                  onClick={() => onOpenSummary(drive)}
-                                  className="h-8 px-3.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200 transition-colors cursor-pointer"
-                                >
-                                  View Summary
-                                </motion.button>
+                                <>
+                                  <motion.button
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={() => onOpenSummary(drive)}
+                                    className="h-8 px-3.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200 transition-colors cursor-pointer"
+                                  >
+                                    View Summary
+                                  </motion.button>
+                                  {onReopenDrive && (
+                                    <motion.button
+                                      whileTap={{ scale: 0.98 }}
+                                      onClick={() => onReopenDrive(drive.id)}
+                                      className="h-8 px-2.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold border border-emerald-200 transition-colors flex items-center gap-1 cursor-pointer"
+                                      title="Reactivate this completed drive"
+                                    >
+                                      <span className="material-symbols-outlined text-[15px]">refresh</span>
+                                      <span>Reopen</span>
+                                    </motion.button>
+                                  )}
+                                </>
                               )}
                             </div>
                           </div>
@@ -491,6 +521,68 @@ export const CompaniesDrivesView: React.FC<CompaniesDrivesViewProps> = ({
           })
         )}
       </div>
+
+      {/* End Drive Confirmation Modal */}
+      <AnimatePresence>
+        {driveToEnd && (
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 flex flex-col gap-4"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-2xl">flag</span>
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 font-display">
+                    End Placement Drive?
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Conclude recruiting cycle for candidates
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-700 leading-relaxed">
+                <p>
+                  Are you sure you want to conclude the drive for{' '}
+                  <strong className="text-slate-900 font-semibold">{driveToEnd.companyName}</strong> (
+                  <strong className="text-slate-900 font-semibold">{driveToEnd.roleTitle}</strong>)?
+                </p>
+                <p className="mt-2 text-slate-500">
+                  This will transition the status to <strong>Completed</strong>. Candidates will see this drive marked as finalized.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setDriveToEnd(null)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onEndDrive && driveToEnd) {
+                      onEndDrive(driveToEnd.id);
+                      setDriveToEnd(null);
+                    }
+                  }}
+                  className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                  <span>Confirm & End Drive</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

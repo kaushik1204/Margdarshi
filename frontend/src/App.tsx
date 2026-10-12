@@ -281,11 +281,28 @@ export default function App() {
     }
   };
 
-  // Student Flow: Self-mark stage progress
-  const handleSelfMarkStage = async (applicationId: string, stageId: string) => {
+  // Student Flow: Self-mark stage progress with outcome and experience review
+  const handleSelfMarkStage = async (
+    applicationId: string,
+    stageId: string,
+    details?: {
+      roundOutcome?: 'CLEARED' | 'AWAITING_RESULT' | 'NOT_CLEARED';
+      difficultyRating?: 'Easy' | 'Moderate' | 'Challenging' | 'Hard';
+      experienceNotes?: string;
+      confidenceRating?: number;
+    }
+  ) => {
     try {
-      await api.applications.updateStageProgress(applicationId, stageId, 'COMPLETED');
-      showToast('Stage marked as completed (Pending coordinator verification)');
+      const status = details?.roundOutcome === 'NOT_CLEARED' ? 'FAILED' : 'COMPLETED';
+      await api.applications.updateStageProgress(applicationId, stageId, status, details);
+
+      if (details) {
+        try {
+          localStorage.setItem(`stage_feedback_${applicationId}_${stageId}`, JSON.stringify(details));
+        } catch {}
+      }
+
+      showToast('Stage attendance, outcome, and experience submitted');
       await fetchLiveData();
     } catch (err: any) {
       showToast(`Error: ${err?.message || 'Failed to update stage progress'}`);
@@ -385,6 +402,40 @@ export default function App() {
     }
   };
 
+  // Coordinator: Conclude / End Drive
+  const handleEndDrive = async (driveId: string) => {
+    try {
+      await api.drives.update(driveId, { status: 'Completed' });
+      if (perDriveFocus && perDriveFocus.id === driveId) {
+        setPerDriveFocus({
+          ...perDriveFocus,
+          status: 'Completed',
+        });
+      }
+      showToast('Placement drive concluded and marked as Completed');
+      await fetchLiveData();
+    } catch (err: any) {
+      showToast(`Error: ${err?.message || 'Failed to end drive'}`);
+    }
+  };
+
+  // Coordinator: Reopen Completed Drive
+  const handleReopenDrive = async (driveId: string) => {
+    try {
+      await api.drives.update(driveId, { status: 'Active' });
+      if (perDriveFocus && perDriveFocus.id === driveId) {
+        setPerDriveFocus({
+          ...perDriveFocus,
+          status: 'Active',
+        });
+      }
+      showToast('Placement drive reactivated and marked as Active');
+      await fetchLiveData();
+    } catch (err: any) {
+      showToast(`Error: ${err?.message || 'Failed to reopen drive'}`);
+    }
+  };
+
   const getTabTitle = () => {
     if (currentRole === 'COORDINATOR') {
       switch (currentTab) {
@@ -475,7 +526,7 @@ export default function App() {
         currentRole={currentRole}
         currentTab={currentTab}
         onSelectTab={setCurrentTab}
-        activeCycle="2024-25"
+        activeCycle="2026-2027"
         student={currentStudent}
         isMobileOpen={isMobileMenuOpen}
         onCloseMobile={() => setIsMobileMenuOpen(false)}
@@ -528,6 +579,8 @@ export default function App() {
                       setPerDriveFocus(drive);
                       setCurrentTab('per-drive-dashboard');
                     }}
+                    onEndDrive={handleEndDrive}
+                    onReopenDrive={handleReopenDrive}
                   />
                 )}
 
@@ -541,6 +594,8 @@ export default function App() {
                     onConfirmStageProgress={handleConfirmStageProgress}
                     onRecordResult={handleRecordResult}
                     onUpdateStages={handleUpdateStages}
+                    onEndDrive={handleEndDrive}
+                    onReopenDrive={handleReopenDrive}
                     onBack={() => setCurrentTab('companies-and-drives')}
                   />
                 )}

@@ -118,6 +118,10 @@ export interface StageProgressRecord {
   status: StageProgressStatus;
   completedAt?: string;
   reportedBy: ReportedBy; // STUDENT (self-marked, unverified) vs COORDINATOR (confirmed)
+  roundOutcome?: 'CLEARED' | 'AWAITING_RESULT' | 'NOT_CLEARED';
+  difficultyRating?: 'Easy' | 'Moderate' | 'Challenging' | 'Hard';
+  experienceNotes?: string;
+  confidenceRating?: number;
 }
 
 export interface PlacementResultRecord {

@@ -14,7 +14,16 @@ interface StudentApplicationsViewProps {
   applications: ApplicationRecord[];
   stageProgresses: StageProgressRecord[];
   results: PlacementResultRecord[];
-  onSelfMarkStage: (applicationId: string, stageId: string) => void;
+  onSelfMarkStage: (
+    applicationId: string,
+    stageId: string,
+    details?: {
+      roundOutcome?: 'CLEARED' | 'AWAITING_RESULT' | 'NOT_CLEARED';
+      difficultyRating?: 'Easy' | 'Moderate' | 'Challenging' | 'Hard';
+      experienceNotes?: string;
+      confidenceRating?: number;
+    }
+  ) => void;
   onNavigateToDrives: () => void;
 }
 
@@ -31,6 +40,17 @@ export const StudentApplicationsView: React.FC<StudentApplicationsViewProps> = (
     applications[0]?.id || ''
   );
 
+  // Attendance & Feedback Modal State
+  const [attendedModalStage, setAttendedModalStage] = useState<{
+    applicationId: string;
+    stage: any;
+  } | null>(null);
+
+  const [roundOutcome, setRoundOutcome] = useState<'CLEARED' | 'AWAITING_RESULT' | 'NOT_CLEARED'>('CLEARED');
+  const [difficultyRating, setDifficultyRating] = useState<'Easy' | 'Moderate' | 'Challenging' | 'Hard'>('Moderate');
+  const [experienceNotes, setExperienceNotes] = useState('');
+  const [confidenceScore, setConfidenceScore] = useState<number>(4);
+
   const drivesMap = new Map();
   companies.forEach((c) => {
     c.drives.forEach((d) => drivesMap.set(d.id, d));
@@ -38,6 +58,64 @@ export const StudentApplicationsView: React.FC<StudentApplicationsViewProps> = (
 
   const selectedApplication = applications.find((a) => a.id === selectedAppId) || applications[0];
   const selectedDrive = selectedApplication ? drivesMap.get(selectedApplication.driveId) : null;
+
+  const handleOpenAttendanceModal = (stage: any) => {
+    let cached: any = null;
+    try {
+      const raw = localStorage.getItem(`stage_feedback_${selectedApplication.id}_${stage.id}`);
+      if (raw) cached = JSON.parse(raw);
+    } catch {}
+
+    setRoundOutcome(cached?.roundOutcome || 'CLEARED');
+    setDifficultyRating(cached?.difficultyRating || 'Moderate');
+    setExperienceNotes(cached?.experienceNotes || '');
+    setConfidenceScore(cached?.confidenceRating || 4);
+
+    setAttendedModalStage({
+      applicationId: selectedApplication.id,
+      stage,
+    });
+  };
+
+  const handleSaveAttendanceFeedback = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!attendedModalStage) return;
+
+    onSelfMarkStage(attendedModalStage.applicationId, attendedModalStage.stage.id, {
+      roundOutcome,
+      difficultyRating,
+      experienceNotes: experienceNotes.trim(),
+      confidenceRating: confidenceScore,
+    });
+
+    setAttendedModalStage(null);
+  };
+
+  const getStageDetails = (stageId: string) => {
+    const progress = stageProgresses.find(
+      (sp) => sp.applicationId === selectedApplication.id && sp.stageId === stageId
+    );
+    let cached: any = null;
+    try {
+      const raw = localStorage.getItem(`stage_feedback_${selectedApplication.id}_${stageId}`);
+      if (raw) cached = JSON.parse(raw);
+    } catch {}
+
+    const isCompleted = progress?.status === 'COMPLETED';
+    const outcome = cached?.roundOutcome || progress?.roundOutcome || (isCompleted ? 'CLEARED' : null);
+    const difficulty = cached?.difficultyRating || progress?.difficultyRating;
+    const notes = cached?.experienceNotes || progress?.experienceNotes;
+    const confidence = cached?.confidenceRating || progress?.confidenceRating;
+
+    return {
+      progress,
+      isCompleted,
+      outcome,
+      difficulty,
+      notes,
+      confidence,
+    };
+  };
 
   return (
     <div className="flex flex-col w-full gap-6">
@@ -191,13 +269,10 @@ export const StudentApplicationsView: React.FC<StudentApplicationsViewProps> = (
               {/* Vertical Stage Timeline */}
               <div className="relative flex flex-col gap-6 pl-6 before:content-[''] before:absolute before:left-2.5 before:top-3 before:bottom-3 before:w-0.5 before:bg-slate-200">
                 {selectedDrive.stages.map((stage: any, idx: number) => {
-                  const progress = stageProgresses.find(
-                    (sp) => sp.applicationId === selectedApplication.id && sp.stageId === stage.id
-                  );
-
-                  const isCompleted = progress?.status === 'COMPLETED';
-                  const isVerifiedByCoordinator = progress?.reportedBy === 'COORDINATOR';
-                  const isSelfMarked = isCompleted && progress?.reportedBy === 'STUDENT';
+                  const details = getStageDetails(stage.id);
+                  const isCompleted = details.isCompleted;
+                  const isVerifiedByCoordinator = details.progress?.reportedBy === 'COORDINATOR';
+                  const isSelfMarked = isCompleted && details.progress?.reportedBy === 'STUDENT';
 
                   return (
                     <motion.div
@@ -230,19 +305,40 @@ export const StudentApplicationsView: React.FC<StudentApplicationsViewProps> = (
                       <div className="flex-1 bg-white border border-slate-200/80 rounded-xl p-4 shadow-2xs flex flex-col gap-2 hover:border-slate-300 transition-colors">
                         <div className="flex items-start justify-between gap-2">
                           <div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <span className="text-[11px] font-semibold text-slate-400 uppercase font-mono">
                                 Stage {stage.stageOrder}
                               </span>
                               {isVerifiedByCoordinator && (
-                                <span className="text-[11px] font-semibold text-emerald-700 flex items-center gap-0.5">
+                                <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 flex items-center gap-0.5">
                                   <span className="material-symbols-outlined text-[13px]">verified</span>
-                                  <span>Confirmed</span>
+                                  <span>Verified by Coordinator</span>
                                 </span>
                               )}
                               {isSelfMarked && (
-                                <span className="text-[11px] font-semibold text-amber-600">
-                                  Self-Reported
+                                <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200 flex items-center gap-1">
+                                  <span className="material-symbols-outlined text-[13px]">person_check</span>
+                                  <span>Self-Reported</span>
+                                </span>
+                              )}
+
+                              {/* Student-reported outcome badge */}
+                              {isCompleted && details.outcome === 'CLEARED' && (
+                                <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 flex items-center gap-1">
+                                  <span className="material-symbols-outlined text-[13px]">check_circle</span>
+                                  <span>Cleared Round</span>
+                                </span>
+                              )}
+                              {isCompleted && details.outcome === 'AWAITING_RESULT' && (
+                                <span className="text-[11px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200 flex items-center gap-1">
+                                  <span className="material-symbols-outlined text-[13px]">hourglass_top</span>
+                                  <span>Awaiting Result</span>
+                                </span>
+                              )}
+                              {isCompleted && details.outcome === 'NOT_CLEARED' && (
+                                <span className="text-[11px] font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200 flex items-center gap-1">
+                                  <span className="material-symbols-outlined text-[13px]">cancel</span>
+                                  <span>Did Not Clear</span>
                                 </span>
                               )}
                             </div>
@@ -251,23 +347,34 @@ export const StudentApplicationsView: React.FC<StudentApplicationsViewProps> = (
                             </h4>
                           </div>
 
-                          {/* Self-Mark Button */}
-                          {!isCompleted && (
+                          {/* Self-Mark / Edit Feedback Action */}
+                          {!isCompleted ? (
                             <motion.button
                               whileHover={{ scale: 1.02 }}
                               whileTap={{ scale: 0.98 }}
-                              onClick={() => onSelfMarkStage(selectedApplication.id, stage.id)}
-                              className="px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-blue-700 border border-slate-200 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
-                              title="Self-mark as attended/cleared"
+                              onClick={() => handleOpenAttendanceModal(stage)}
+                              className="px-3.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                              title="Report round attendance, outcome, and experience"
                             >
-                              <span className="material-symbols-outlined text-[15px]">check_circle</span>
+                              <span className="material-symbols-outlined text-[16px]">check_circle</span>
                               <span>Mark Attended</span>
+                            </motion.button>
+                          ) : (
+                            <motion.button
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={() => handleOpenAttendanceModal(stage)}
+                              className="px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200 text-xs font-medium transition-colors flex items-center gap-1 cursor-pointer"
+                              title="Update outcome or feedback notes"
+                            >
+                              <span className="material-symbols-outlined text-[14px] text-blue-600">edit_note</span>
+                              <span>Edit Feedback</span>
                             </motion.button>
                           )}
                         </div>
 
                         {/* Stage Schedule & Link info */}
-                        <div className="flex items-center gap-3 text-xs text-slate-500 flex-wrap pt-1">
+                        <div className="flex items-center gap-3 text-xs text-slate-500 flex-wrap pt-0.5">
                           {stage.date && (
                             <span className="flex items-center gap-1">
                               <span className="material-symbols-outlined text-[14px]">event</span>
@@ -292,6 +399,35 @@ export const StudentApplicationsView: React.FC<StudentApplicationsViewProps> = (
                             </a>
                           )}
                         </div>
+
+                        {/* Experience Notes & Review Snippet */}
+                        {isCompleted && (details.notes || details.difficulty || details.confidence) && (
+                          <div className="mt-2 p-3 rounded-xl bg-slate-50/80 border border-slate-200/90 text-xs flex flex-col gap-1.5">
+                            <div className="flex items-center justify-between text-[11px] text-slate-500 flex-wrap gap-1">
+                              <span className="font-semibold text-slate-700 flex items-center gap-1">
+                                <span className="material-symbols-outlined text-[14px] text-blue-600">reviews</span>
+                                <span>Candidate Round Review</span>
+                              </span>
+                              <div className="flex items-center gap-2">
+                                {details.difficulty && (
+                                  <span className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700 font-medium">
+                                    Difficulty: <strong>{details.difficulty}</strong>
+                                  </span>
+                                )}
+                                {details.confidence && (
+                                  <span className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-amber-600 font-semibold">
+                                    ★ {details.confidence}/5
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            {details.notes && (
+                              <p className="text-slate-700 leading-relaxed italic bg-white p-2.5 rounded-lg border border-slate-100">
+                                "{details.notes}"
+                              </p>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </motion.div>
                   );
@@ -301,6 +437,224 @@ export const StudentApplicationsView: React.FC<StudentApplicationsViewProps> = (
           )}
         </div>
       )}
+
+      {/* Attendance, Outcome & Round Experience Modal */}
+      <AnimatePresence>
+        {attendedModalStage && (
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 8 }}
+              className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 flex flex-col gap-4 max-h-[90vh] overflow-y-auto"
+            >
+              {/* Modal Header */}
+              <div className="flex items-start justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-[22px]">assignment_turned_in</span>
+                  </div>
+                  <div>
+                    <span className="text-[11px] font-semibold text-blue-600 uppercase tracking-wider font-mono">
+                      Stage {attendedModalStage.stage.stageOrder} Self-Report
+                    </span>
+                    <h3 className="text-base font-bold text-slate-900 font-display">
+                      {attendedModalStage.stage.name}
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      {selectedDrive?.companyName} · {selectedDrive?.roleTitle}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAttendedModalStage(null)}
+                  className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[18px]">close</span>
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveAttendanceFeedback} className="flex flex-col gap-4">
+                {/* 1. Round Outcome / Result */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[16px] text-blue-600">flag</span>
+                    <span>What was the result of this round? *</span>
+                  </label>
+                  <p className="text-[11px] text-slate-500">
+                    Select your current status or outcome for this stage.
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-1">
+                    {[
+                      {
+                        value: 'CLEARED' as const,
+                        label: 'Cleared / Passed',
+                        desc: 'Shortlisted for next round',
+                        icon: 'check_circle',
+                        activeColor: 'bg-emerald-50 border-emerald-500 text-emerald-800',
+                      },
+                      {
+                        value: 'AWAITING_RESULT' as const,
+                        label: 'Awaiting Results',
+                        desc: 'Attended, results pending',
+                        icon: 'hourglass_top',
+                        activeColor: 'bg-blue-50 border-blue-500 text-blue-800',
+                      },
+                      {
+                        value: 'NOT_CLEARED' as const,
+                        label: 'Did Not Clear',
+                        desc: 'Attempted, did not qualify',
+                        icon: 'cancel',
+                        activeColor: 'bg-rose-50 border-rose-500 text-rose-800',
+                      },
+                    ].map((opt) => {
+                      const isSelected = roundOutcome === opt.value;
+                      return (
+                        <div
+                          key={opt.value}
+                          onClick={() => setRoundOutcome(opt.value)}
+                          className={`p-3 rounded-xl border-2 cursor-pointer transition-all flex flex-col justify-between gap-1 select-none ${
+                            isSelected
+                              ? `${opt.activeColor} shadow-2xs`
+                              : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold">{opt.label}</span>
+                            <span className="material-symbols-outlined text-[18px]">
+                              {opt.icon}
+                            </span>
+                          </div>
+                          <span className="text-[10px] opacity-80 leading-tight">
+                            {opt.desc}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 2. Round Difficulty */}
+                <div className="flex flex-col gap-1.5 pt-2 border-t border-slate-100">
+                  <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[16px] text-blue-600">speed</span>
+                    <span>How difficult was this round?</span>
+                  </label>
+                  <div className="grid grid-cols-4 gap-2 mt-1">
+                    {(['Easy', 'Moderate', 'Challenging', 'Hard'] as const).map((diff) => {
+                      const isSelected = difficultyRating === diff;
+                      return (
+                        <button
+                          key={diff}
+                          type="button"
+                          onClick={() => setDifficultyRating(diff)}
+                          className={`py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
+                              : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                          }`}
+                        >
+                          {diff}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 3. Self Performance Confidence Rating */}
+                <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                  <div>
+                    <label className="text-xs font-bold text-slate-800 block">
+                      Performance Confidence Rating
+                    </label>
+                    <span className="text-[11px] text-slate-500">How satisfied are you with your performance?</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setConfidenceScore(star)}
+                        className={`text-xl transition-transform hover:scale-110 cursor-pointer ${
+                          star <= confidenceScore ? 'text-amber-400' : 'text-slate-200'
+                        }`}
+                      >
+                        ★
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 4. Experience & How Was It? */}
+                <div className="flex flex-col gap-1.5 pt-2 border-t border-slate-100">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-[16px] text-blue-600">edit_note</span>
+                      <span>How was it? Share questions & insights *</span>
+                    </label>
+                    <span className="text-[10px] text-slate-400">Visible to you & coordinator</span>
+                  </div>
+
+                  {/* Suggestion Chips */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[10px] font-semibold text-slate-400">Quick Topics:</span>
+                    {[
+                      'DSA / Coding Problems',
+                      'Java / Spring Boot',
+                      'SQL & DBMS Queries',
+                      'System Architecture',
+                      'HR Situational',
+                    ].map((topic) => (
+                      <button
+                        key={topic}
+                        type="button"
+                        onClick={() => {
+                          const separator = experienceNotes ? ', ' : '';
+                          setExperienceNotes(experienceNotes + separator + topic);
+                        }}
+                        className="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-medium transition-colors cursor-pointer"
+                      >
+                        + {topic}
+                      </button>
+                    ))}
+                  </div>
+
+                  <textarea
+                    required
+                    rows={3}
+                    value={experienceNotes}
+                    onChange={(e) => setExperienceNotes(e.target.value)}
+                    placeholder="Describe how the test/interview went. What specific questions or challenges were asked? Any key takeaways or advice for campus peers?"
+                    className="w-full p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 outline-none focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition-all resize-none"
+                  />
+                </div>
+
+                {/* Modal Footer Buttons */}
+                <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setAttendedModalStage(null)}
+                    className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    type="submit"
+                    className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                    <span>Submit Attendance & Review</span>
+                  </motion.button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

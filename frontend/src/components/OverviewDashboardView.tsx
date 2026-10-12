@@ -75,7 +75,7 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
             Coordinator Overview & Placement Metrics
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Anurag University · Academic Placement Cycle 2024–25 · Verified Data Ledger
+            Anurag University · Academic Placement Cycle 2026–2027 · Verified Data Ledger
           </p>
         </div>
         <div className="flex items-center gap-2">

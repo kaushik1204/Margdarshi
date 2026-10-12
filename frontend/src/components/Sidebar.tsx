@@ -16,7 +16,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   currentRole,
   currentTab,
   onSelectTab,
-  activeCycle = '2024-25',
+  activeCycle = '2026-2027',
   student,
   isMobileOpen = false,
   onCloseMobile,

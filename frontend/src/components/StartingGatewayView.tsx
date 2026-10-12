@@ -34,7 +34,7 @@ export const StartingGatewayView: React.FC<StartingGatewayViewProps> = ({
                 Margdarshi
               </span>
               <span className="text-[11px] font-mono text-slate-500 font-medium">
-                2024–25
+                2026–2027
               </span>
             </div>
             <p className="text-[12px] text-slate-500 font-medium tracking-normal -mt-0.5">
