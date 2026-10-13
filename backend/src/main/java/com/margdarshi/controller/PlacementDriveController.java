@@ -114,10 +114,6 @@ public class PlacementDriveController {
         return resp;
     }
 
-    private DriveDetailResponse buildDriveDetail(PlacementDrive d, List<Student> allStudents) {
-        return buildDriveDetail(d, allStudents, null);
-    }
-
     @GetMapping
     public ResponseEntity<List<DriveDetailResponse>> getAllDrives() {
         List<PlacementDrive> drives = driveRepository.findAll();

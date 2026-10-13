@@ -7,7 +7,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 @Component
 public class DataInitializer implements CommandLineRunner {
@@ -59,18 +58,14 @@ public class DataInitializer implements CommandLineRunner {
         String roll = "24EG107B47";
         User studentUser = userRepository.findByEmail("kaushik@anurag.edu.in")
                 .or(() -> userRepository.findByRollNumber(roll))
-                .orElse(null);
-        if (studentUser == null) {
-            studentUser = new User(
-                    "std-24eg107b47",
-                    "kaushik@anurag.edu.in",
-                    passwordEncoder.encode("123123123"),
-                    "Kaushik Rekha",
-                    "STUDENT",
-                    roll
-            );
-            userRepository.save(studentUser);
-        }
+                .orElseGet(() -> userRepository.save(new User(
+                        "std-24eg107b47",
+                        "kaushik@anurag.edu.in",
+                        passwordEncoder.encode("123123123"),
+                        "Kaushik Rekha",
+                        "STUDENT",
+                        roll
+                )));
 
         Student student = studentRepository.findByRollNumber(roll)
                 .or(() -> studentRepository.findByUserId(studentUser.getId()))
