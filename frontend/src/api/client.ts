@@ -9,7 +9,9 @@ import {
   PlacementResultRecord,
 } from '../types/placement';
 
-const API_BASE = `${import.meta.env.VITE_API_BASE_URL || ''}/api`;
+const DEFAULT_BACKEND_URL = 'https://margdarshi-nxsy.onrender.com';
+const rawBase = import.meta.env.VITE_API_BASE_URL || DEFAULT_BACKEND_URL;
+const API_BASE = `${rawBase.replace(/\/+$/, '')}/api`;
 const TOKEN_KEY = 'margdarshi_auth_token';
 
 interface ApiErrorResponse {
@@ -43,7 +45,7 @@ function normalizeStudent(s?: any): StudentProfile | undefined {
     skills: skillsArr,
     tenthPercentage: typeof s.tenthPercentage === 'number' ? s.tenthPercentage : (parseFloat(s.tenthPercentage) || 85.0),
     twelfthPercentage: typeof s.twelfthPercentage === 'number' ? s.twelfthPercentage : (parseFloat(s.twelfthPercentage) || 82.0),
-    graduationYear: typeof s.graduationYear === 'number' ? s.graduationYear : (parseInt(s.graduationYear, 10) || 2026),
+    graduationYear: typeof s.graduationYear === 'number' ? s.graduationYear : (parseInt(s.graduationYear, 10) || 2028),
     resumePath: s.resumePath || `resumes/${s.rollNumber || 'student'}_Resume.pdf`,
   };
 }

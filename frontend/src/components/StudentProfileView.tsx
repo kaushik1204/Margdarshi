@@ -36,6 +36,13 @@ export const StudentProfileView: React.FC<StudentProfileViewProps> = ({
     student?.resumePath?.split('/').pop() || '24EG107B47_resume.pdf'
   );
 
+  const [tenthInput, setTenthInput] = useState<string>(() =>
+    student?.tenthPercentage !== undefined ? String(student.tenthPercentage) : '9.2'
+  );
+  const [twelfthInput, setTwelfthInput] = useState<string>(() =>
+    student?.twelfthPercentage !== undefined ? String(student.twelfthPercentage) : '85.3'
+  );
+
   useEffect(() => {
     if (student) {
       setFormData({
@@ -43,14 +50,33 @@ export const StudentProfileView: React.FC<StudentProfileViewProps> = ({
         skills: getSafeSkills(student),
         tenthPercentage: student.tenthPercentage ?? 85.0,
         twelfthPercentage: student.twelfthPercentage ?? 85.0,
-        graduationYear: student.graduationYear ?? 2026,
+        graduationYear: student.graduationYear ?? 2028,
         resumePath: student.resumePath || `resumes/${student.rollNumber || 'student'}_Resume.pdf`,
       });
+      if (student.tenthPercentage !== undefined) {
+        setTenthInput(String(student.tenthPercentage));
+      }
+      if (student.twelfthPercentage !== undefined) {
+        setTwelfthInput(String(student.twelfthPercentage));
+      }
       if (student.resumePath) {
         setUploadedResumeName(student.resumePath.split('/').pop() || student.resumePath);
       }
     }
   }, [student]);
+
+  const getScoreBadge = (val?: number | string) => {
+    const num = typeof val === 'number' ? val : parseFloat(String(val));
+    if (isNaN(num) || num <= 0) return null;
+    if (num <= 10.0) {
+      return {
+        label: `${num.toFixed(1)} GPA (~${(num * 10).toFixed(0)}%)`,
+      };
+    }
+    return {
+      label: `${num.toFixed(1)}%`,
+    };
+  };
 
   const branches = ['CSE', 'IT', 'ECE', 'AIML', 'Electrical', 'Mechanical', 'Civil'];
 
@@ -214,33 +240,65 @@ export const StudentProfileView: React.FC<StudentProfileViewProps> = ({
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-slate-700">10th Board Marks (%)</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-700">10th Grade Marks</label>
+                  {getScoreBadge(tenthInput) && (
+                    <span className="text-[10px] text-blue-700 font-semibold font-mono bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">
+                      {getScoreBadge(tenthInput)?.label}
+                    </span>
+                  )}
+                </div>
                 <input
                   type="number"
-                  step="0.1"
+                  step="any"
                   min="0"
                   max="100"
-                  value={formData.tenthPercentage}
-                  onChange={(e) =>
-                    setFormData({ ...formData, tenthPercentage: parseFloat(e.target.value) || 0 })
-                  }
-                  className="w-full h-10 px-3.5 rounded-xl bg-slate-50 text-xs text-slate-900 font-mono border border-slate-200 outline-none focus:bg-white focus:border-blue-600"
+                  required
+                  placeholder="e.g. 9.2 GPA or 92.2%"
+                  value={tenthInput}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setTenthInput(val);
+                    const parsed = parseFloat(val);
+                    setFormData((prev) => ({
+                      ...prev,
+                      tenthPercentage: isNaN(parsed) ? 0 : parsed,
+                    }));
+                  }}
+                  className="w-full h-10 px-3.5 rounded-xl bg-slate-50 text-xs text-slate-900 font-mono border border-slate-200 outline-none focus:bg-white focus:border-blue-600 transition-all font-medium"
                 />
+                <span className="text-[10px] text-slate-400">Accepts GPA (e.g. 9.2) or Percentage (e.g. 92.2%)</span>
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-slate-700">12th Board Marks (%)</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-700">12th / Inter Marks</label>
+                  {getScoreBadge(twelfthInput) && (
+                    <span className="text-[10px] text-blue-700 font-semibold font-mono bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">
+                      {getScoreBadge(twelfthInput)?.label}
+                    </span>
+                  )}
+                </div>
                 <input
                   type="number"
-                  step="0.1"
+                  step="any"
                   min="0"
                   max="100"
-                  value={formData.twelfthPercentage}
-                  onChange={(e) =>
-                    setFormData({ ...formData, twelfthPercentage: parseFloat(e.target.value) || 0 })
-                  }
-                  className="w-full h-10 px-3.5 rounded-xl bg-slate-50 text-xs text-slate-900 font-mono border border-slate-200 outline-none focus:bg-white focus:border-blue-600"
+                  required
+                  placeholder="e.g. 85.3% or 8.5 GPA"
+                  value={twelfthInput}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setTwelfthInput(val);
+                    const parsed = parseFloat(val);
+                    setFormData((prev) => ({
+                      ...prev,
+                      twelfthPercentage: isNaN(parsed) ? 0 : parsed,
+                    }));
+                  }}
+                  className="w-full h-10 px-3.5 rounded-xl bg-slate-50 text-xs text-slate-900 font-mono border border-slate-200 outline-none focus:bg-white focus:border-blue-600 transition-all font-medium"
                 />
+                <span className="text-[10px] text-slate-400">Accepts Percentage (e.g. 85.3%) or GPA (e.g. 8.5)</span>
               </div>
 
               <div className="flex flex-col gap-1.5">

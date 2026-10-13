@@ -20,8 +20,9 @@ export default defineConfig(() => {
       host: '0.0.0.0',
       proxy: {
         '/api': {
-          target: 'http://localhost:8080',
+          target: process.env.VITE_API_BASE_URL || 'https://margdarshi-nxsy.onrender.com',
           changeOrigin: true,
+          secure: false,
         },
       },
       // HMR is disabled in AI Studio via DISABLE_HMR env var.

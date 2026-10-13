@@ -63,21 +63,35 @@ public class EligibilityService {
             }
         }
 
-        // 4. 10th percentage
+        // 4. 10th marks / GPA (auto-normalizes GPA <= 10.0, e.g. 9.2 GPA -> 92%)
         if (criteria.getMin10thPercentage() != null && criteria.getMin10thPercentage().compareTo(BigDecimal.ZERO) > 0 &&
                 student.getTenthPercentage() != null && student.getTenthPercentage().compareTo(BigDecimal.ZERO) > 0) {
-            if (student.getTenthPercentage().compareTo(criteria.getMin10thPercentage()) < 0) {
-                reasons.add(String.format("10th board marks (%s%%) below minimum (%s%%)",
-                        student.getTenthPercentage().toPlainString(), criteria.getMin10thPercentage().toPlainString()));
+            BigDecimal effective10 = student.getTenthPercentage();
+            if (effective10.compareTo(new BigDecimal("10.0")) <= 0) {
+                effective10 = effective10.multiply(new BigDecimal("10"));
+            }
+            if (effective10.compareTo(criteria.getMin10thPercentage()) < 0) {
+                String label = student.getTenthPercentage().compareTo(new BigDecimal("10.0")) <= 0
+                        ? student.getTenthPercentage().toPlainString() + " GPA"
+                        : student.getTenthPercentage().toPlainString() + "%";
+                reasons.add(String.format("10th board marks (%s) below minimum (%s%%)",
+                        label, criteria.getMin10thPercentage().toPlainString()));
             }
         }
 
-        // 5. 12th percentage
+        // 5. 12th marks / GPA (auto-normalizes GPA <= 10.0, e.g. 8.5 GPA -> 85%)
         if (criteria.getMin12thPercentage() != null && criteria.getMin12thPercentage().compareTo(BigDecimal.ZERO) > 0 &&
                 student.getTwelfthPercentage() != null && student.getTwelfthPercentage().compareTo(BigDecimal.ZERO) > 0) {
-            if (student.getTwelfthPercentage().compareTo(criteria.getMin12thPercentage()) < 0) {
-                reasons.add(String.format("12th board marks (%s%%) below minimum (%s%%)",
-                        student.getTwelfthPercentage().toPlainString(), criteria.getMin12thPercentage().toPlainString()));
+            BigDecimal effective12 = student.getTwelfthPercentage();
+            if (effective12.compareTo(new BigDecimal("10.0")) <= 0) {
+                effective12 = effective12.multiply(new BigDecimal("10"));
+            }
+            if (effective12.compareTo(criteria.getMin12thPercentage()) < 0) {
+                String label = student.getTwelfthPercentage().compareTo(new BigDecimal("10.0")) <= 0
+                        ? student.getTwelfthPercentage().toPlainString() + " GPA"
+                        : student.getTwelfthPercentage().toPlainString() + "%";
+                reasons.add(String.format("12th board marks (%s) below minimum (%s%%)",
+                        label, criteria.getMin12thPercentage().toPlainString()));
             }
         }
 

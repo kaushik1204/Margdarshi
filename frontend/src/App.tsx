@@ -85,6 +85,10 @@ export default function App() {
 
   // Active student profile with local storage account persistence
   const [currentStudent, setCurrentStudent] = useState<StudentProfile>(() => {
+    try {
+      const activeRaw = localStorage.getItem('margdarshi_active_student_profile');
+      if (activeRaw) return JSON.parse(activeRaw);
+    } catch {}
     return (
       getStoredProfileForAccount('kaushik@anurag.edu.in') ||
       getStoredProfileForAccount('24EG107B47') ||
@@ -258,9 +262,21 @@ export default function App() {
         }
         setPageState('APP');
         setCurrentTab(me.user.role === 'COORDINATOR' ? 'companies-and-drives' : 'student-drives');
-      } catch {
-        api.auth.signOut();
-        setPageState('GATEWAY');
+      } catch (err: any) {
+        if (err?.status === 401) {
+          api.auth.signOut();
+          setPageState('GATEWAY');
+        } else {
+          // If backend is sleeping/starting up, preserve existing session and local profile
+          const stored =
+            getStoredProfileForAccount('kaushik@anurag.edu.in') ||
+            getStoredProfileForAccount('24EG107B47') ||
+            getStoredProfileForAccount('std-24eg107b47');
+          if (stored) {
+            setCurrentStudent(stored);
+          }
+          setPageState('APP');
+        }
       }
     };
 
@@ -439,7 +455,7 @@ export default function App() {
         currentUser?.rollNumber,
       ]);
 
-      showToast('Academic profile updated across all views & saved for this account.');
+      showToast('Academic profile saved & synced across all views and server.');
       await fetchLiveData();
     } catch (err: any) {
       showToast(`Error: ${err?.message || 'Failed to update profile'}`);

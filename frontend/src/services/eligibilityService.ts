@@ -56,21 +56,23 @@ export class EligibilityService {
       );
     }
 
-    // 4. 10th percentage (only enforce if cutoff is set and student provided marks)
+    // 4. 10th marks / GPA (auto-normalizes GPA <= 10.0, e.g. 9.2 GPA -> 92%)
     const min10 = parseFloat(String(criteria.min10thPercentage ?? 0));
     const std10 = parseFloat(String(student.tenthPercentage ?? 0));
-    if (min10 > 0 && std10 > 0 && std10 < min10 - 0.001) {
+    const effective10 = std10 > 0 && std10 <= 10.0 ? std10 * 10.0 : std10;
+    if (min10 > 0 && std10 > 0 && effective10 < min10 - 0.001) {
       reasons.push(
-        `10th board marks (${std10}%) below minimum (${min10}%)`
+        `10th board marks (${std10 <= 10 ? `${std10} GPA` : `${std10}%`}) below minimum (${min10}%)`
       );
     }
 
-    // 5. 12th percentage (only enforce if cutoff is set and student provided marks)
+    // 5. 12th marks / GPA (auto-normalizes GPA <= 10.0, e.g. 8.5 GPA -> 85%)
     const min12 = parseFloat(String(criteria.min12thPercentage ?? 0));
     const std12 = parseFloat(String(student.twelfthPercentage ?? 0));
-    if (min12 > 0 && std12 > 0 && std12 < min12 - 0.001) {
+    const effective12 = std12 > 0 && std12 <= 10.0 ? std12 * 10.0 : std12;
+    if (min12 > 0 && std12 > 0 && effective12 < min12 - 0.001) {
       reasons.push(
-        `12th board marks (${std12}%) below minimum (${min12}%)`
+        `12th board marks (${std12 <= 10 ? `${std12} GPA` : `${std12}%`}) below minimum (${min12}%)`
       );
     }
 

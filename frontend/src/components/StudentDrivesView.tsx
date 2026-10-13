@@ -146,9 +146,9 @@ export const StudentDrivesView: React.FC<StudentDrivesViewProps> = ({
               <span aria-hidden="true">·</span>
               <span>Backlogs: <strong className={student.backlogs === 0 ? 'text-emerald-700' : 'text-red-600'}>{student.backlogs}</strong></span>
               <span aria-hidden="true">·</span>
-              <span>10th: <strong className="text-slate-800 font-mono">{student.tenthPercentage}%</strong></span>
+              <span>10th: <strong className="text-slate-800 font-mono">{student.tenthPercentage}{student.tenthPercentage <= 10 ? ' GPA' : '%'}</strong></span>
               <span aria-hidden="true">·</span>
-              <span>12th: <strong className="text-slate-800 font-mono">{student.twelfthPercentage}%</strong></span>
+              <span>12th: <strong className="text-slate-800 font-mono">{student.twelfthPercentage}{student.twelfthPercentage <= 10 ? ' GPA' : '%'}</strong></span>
             </div>
           </div>
         </div>
