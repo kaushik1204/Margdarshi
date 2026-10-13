@@ -57,7 +57,9 @@ public class DataInitializer implements CommandLineRunner {
 
         // 2. Seed / Synchronize Default Enrolled Student Account (Kaushik Rekha - 24EG107B47)
         String roll = "24EG107B47";
-        User studentUser = userRepository.findByEmail("kaushik@anurag.edu.in").orElse(null);
+        User studentUser = userRepository.findByEmail("kaushik@anurag.edu.in")
+                .or(() -> userRepository.findByRollNumber(roll))
+                .orElse(null);
         if (studentUser == null) {
             studentUser = new User(
                     "std-24eg107b47",
@@ -67,28 +69,32 @@ public class DataInitializer implements CommandLineRunner {
                     "STUDENT",
                     roll
             );
-        } else {
-            studentUser.setPasswordHash(passwordEncoder.encode("123123123"));
-            studentUser.setRollNumber(roll);
+            userRepository.save(studentUser);
         }
-        userRepository.save(studentUser);
 
-        Student student = studentRepository.findByRollNumber(roll).orElseGet(Student::new);
-        student.setId("std-24eg107b47");
-        student.setUser(studentUser);
-        student.setRollNumber(roll);
-        student.setName("Kaushik Rekha");
-        student.setBranch("CSE");
-        student.setCgpa(new BigDecimal("8.85"));
-        student.setBacklogs(0);
-        student.setTenthPercentage(new BigDecimal("91.0"));
-        student.setTwelfthPercentage(new BigDecimal("88.5"));
-        student.setGraduationYear(2028);
-        student.setEmail("kaushik@anurag.edu.in");
-        student.setPhone("+91 98765 43210");
-        student.setSkills("Java,Python,React,Spring Boot,MySQL,Data Structures & Algorithms");
-        student.setResumePath("resumes/24EG107B47_Kaushik_Resume.pdf");
-        studentRepository.save(student);
+        Student student = studentRepository.findByRollNumber(roll)
+                .or(() -> studentRepository.findByUserId(studentUser.getId()))
+                .or(() -> studentRepository.findByEmail("kaushik@anurag.edu.in"))
+                .orElse(null);
+
+        if (student == null) {
+            student = new Student();
+            student.setId("std-24eg107b47");
+            student.setUser(studentUser);
+            student.setRollNumber(roll);
+            student.setName("Kaushik Rekha");
+            student.setBranch("CSE");
+            student.setCgpa(new BigDecimal("8.85"));
+            student.setBacklogs(0);
+            student.setTenthPercentage(new BigDecimal("91.0"));
+            student.setTwelfthPercentage(new BigDecimal("88.5"));
+            student.setGraduationYear(2028);
+            student.setEmail("kaushik@anurag.edu.in");
+            student.setPhone("+91 98765 43210");
+            student.setSkills("Java,Python,React,Spring Boot,MySQL,Data Structures & Algorithms");
+            student.setResumePath("resumes/24EG107B47_Kaushik_Resume.pdf");
+            studentRepository.save(student);
+        }
 
         // 3. Seed Initial Companies & Drives if empty
         if (companyRepository.count() == 0) {

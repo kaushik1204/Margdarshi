@@ -152,7 +152,10 @@ public class AuthController {
         }
 
         Student student = "STUDENT".equals(user.getRole())
-                ? studentRepository.findByUserId(user.getId()).orElse(null)
+                ? studentRepository.findByUserId(user.getId())
+                        .or(() -> user.getRollNumber() != null ? studentRepository.findByRollNumber(user.getRollNumber()) : Optional.empty())
+                        .or(() -> studentRepository.findByEmail(user.getEmail()))
+                        .orElse(null)
                 : null;
 
         AuthDTOs.UserDTO userDTO = new AuthDTOs.UserDTO(user.getId(), user.getEmail(), user.getName(), user.getRole(), user.getRollNumber());

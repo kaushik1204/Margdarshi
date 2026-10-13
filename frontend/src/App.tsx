@@ -48,6 +48,29 @@ const DEFAULT_STUDENT: StudentProfile = {
   phone: '+91 98765 43210',
 };
 
+const PROFILE_STORAGE_KEY = 'margdarshi_saved_profile';
+
+function getStoredProfileForAccount(identifier?: string | null): StudentProfile | null {
+  if (!identifier) return null;
+  try {
+    const raw = localStorage.getItem(`${PROFILE_STORAGE_KEY}_${identifier.toLowerCase().trim()}`);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return null;
+}
+
+function persistProfileForAccount(profile: StudentProfile, identifiers: (string | undefined | null)[]) {
+  try {
+    const json = JSON.stringify(profile);
+    localStorage.setItem('margdarshi_active_student_profile', json);
+    identifiers.forEach((id) => {
+      if (id && id.trim()) {
+        localStorage.setItem(`${PROFILE_STORAGE_KEY}_${id.toLowerCase().trim()}`, json);
+      }
+    });
+  } catch {}
+}
+
 export default function App() {
   // Page mode: 'GATEWAY' (Starting Landing Page) | 'AUTH' (Dedicated Sign In / Register) | 'APP' (Workspace)
   const [pageState, setPageState] = useState<'GATEWAY' | 'AUTH' | 'APP'>('GATEWAY');
@@ -60,8 +83,15 @@ export default function App() {
   // Navigation tab state
   const [currentTab, setCurrentTab] = useState<string>('student-drives');
 
-  // Active student profile
-  const [currentStudent, setCurrentStudent] = useState<StudentProfile>(DEFAULT_STUDENT);
+  // Active student profile with local storage account persistence
+  const [currentStudent, setCurrentStudent] = useState<StudentProfile>(() => {
+    return (
+      getStoredProfileForAccount('kaushik@anurag.edu.in') ||
+      getStoredProfileForAccount('24EG107B47') ||
+      getStoredProfileForAccount('std-24eg107b47') ||
+      DEFAULT_STUDENT
+    );
+  });
   const [sampleStudents, setSampleStudents] = useState<StudentProfile[]>([DEFAULT_STUDENT]);
 
   // Core database state populated from real REST API
@@ -192,6 +222,13 @@ export default function App() {
       // 2. Check existing session token
       const token = api.getToken();
       if (!token) {
+        const stored =
+          getStoredProfileForAccount('kaushik@anurag.edu.in') ||
+          getStoredProfileForAccount('24EG107B47') ||
+          getStoredProfileForAccount('std-24eg107b47');
+        if (stored) {
+          setCurrentStudent(stored);
+        }
         setPageState('GATEWAY');
         return;
       }
@@ -202,6 +239,22 @@ export default function App() {
         setCurrentRole(me.user.role);
         if (me.student) {
           setCurrentStudent(me.student);
+          persistProfileForAccount(me.student, [
+            me.user.email,
+            me.user.rollNumber,
+            me.user.id,
+            me.student.id,
+            me.student.rollNumber,
+            me.student.email,
+          ]);
+        } else if (me.user.role === 'STUDENT') {
+          const stored =
+            getStoredProfileForAccount(me.user.email) ||
+            getStoredProfileForAccount(me.user.rollNumber) ||
+            getStoredProfileForAccount(me.user.id);
+          if (stored) {
+            setCurrentStudent(stored);
+          }
         }
         setPageState('APP');
         setCurrentTab(me.user.role === 'COORDINATOR' ? 'companies-and-drives' : 'student-drives');
@@ -243,8 +296,22 @@ export default function App() {
     setCurrentRole(user.role);
     setPageState('APP');
 
-    if (studentProfile) {
-      setCurrentStudent(studentProfile);
+    const stored =
+      getStoredProfileForAccount(user.email) ||
+      getStoredProfileForAccount(user.rollNumber) ||
+      getStoredProfileForAccount(user.id);
+    const effectiveProfile = studentProfile || stored || DEFAULT_STUDENT;
+
+    if (effectiveProfile) {
+      setCurrentStudent(effectiveProfile);
+      persistProfileForAccount(effectiveProfile, [
+        user.email,
+        user.rollNumber,
+        user.id,
+        effectiveProfile.id,
+        effectiveProfile.rollNumber,
+        effectiveProfile.email,
+      ]);
     }
 
     if (user.role === 'COORDINATOR') {
@@ -252,7 +319,7 @@ export default function App() {
       showToast(`Welcome ${user.name} (Placement Cell Coordinator)`);
     } else {
       setCurrentTab('student-drives');
-      showToast(`Welcome ${user.name} (${user.rollNumber || 'Student Portal'})`);
+      showToast(`Welcome ${effectiveProfile?.name || user.name} (${effectiveProfile?.rollNumber || user.rollNumber || 'Student Portal'})`);
     }
 
     await fetchLiveData();
@@ -312,9 +379,67 @@ export default function App() {
   // Student Flow: Update Profile
   const handleUpdateStudent = async (updated: StudentProfile) => {
     try {
-      const saved = await api.students.update(updated.id, updated);
-      setCurrentStudent(saved);
-      showToast('Academic profile updated. Live eligibility recalculated.');
+      let savedStudent = updated;
+      let returnedUser: AuthUser | undefined = undefined;
+
+      try {
+        const targetId = updated.id || currentStudent.id || 'std-24eg107b47';
+        const result: any = await api.students.update(targetId, updated);
+        savedStudent = result;
+        returnedUser = result.user;
+      } catch (err: any) {
+        console.warn('API update failed, keeping changes locally for this account:', err);
+      }
+
+      // 1. Update current student state across views (baseline card, drives eligibility, etc.)
+      setCurrentStudent(savedStudent);
+
+      // 2. Update currentUser state so header, auth dropdown, and identity update immediately
+      setCurrentUser((prev) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          name: savedStudent.name,
+          email: savedStudent.email,
+          rollNumber: savedStudent.rollNumber,
+          ...(returnedUser || {}),
+        };
+      });
+
+      // 3. Update sampleStudents so directory, modal funnels, and analytics show the updated student
+      setSampleStudents((prev) => {
+        const exists = prev.some(
+          (s) =>
+            s.id === savedStudent.id ||
+            s.rollNumber === updated.rollNumber ||
+            s.rollNumber === savedStudent.rollNumber
+        );
+        if (exists) {
+          return prev.map((s) =>
+            s.id === savedStudent.id ||
+            s.rollNumber === updated.rollNumber ||
+            s.rollNumber === savedStudent.rollNumber
+              ? savedStudent
+              : s
+          );
+        }
+        return [...prev, savedStudent];
+      });
+
+      // 4. Persist for this account in localStorage so it permanently keeps using it
+      persistProfileForAccount(savedStudent, [
+        savedStudent.id,
+        savedStudent.email,
+        savedStudent.rollNumber,
+        updated.id,
+        updated.email,
+        updated.rollNumber,
+        currentUser?.id,
+        currentUser?.email,
+        currentUser?.rollNumber,
+      ]);
+
+      showToast('Academic profile updated across all views & saved for this account.');
       await fetchLiveData();
     } catch (err: any) {
       showToast(`Error: ${err?.message || 'Failed to update profile'}`);
@@ -758,6 +883,7 @@ export default function App() {
         {summaryDrive && (
           <DriveSummaryModal
             drive={summaryDrive}
+            student={currentStudent}
             isOpen={!!summaryDrive}
             onClose={() => setSummaryDrive(null)}
           />

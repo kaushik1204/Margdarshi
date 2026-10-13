@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Company, PlacementDrive, StudentProfile, ApplicationRecord } from '../types/placement';
 import { EligibilityService } from '../services/eligibilityService';
+import { getYearOfStudy, getShortYearOfStudy } from '../utils/academicYear';
 
 interface StudentDrivesViewProps {
   companies: Company[];
@@ -152,7 +153,7 @@ export const StudentDrivesView: React.FC<StudentDrivesViewProps> = ({
           </div>
         </div>
         <div className="flex items-center gap-2 text-xs text-slate-500">
-          <span>Graduation Class of <strong>{student.graduationYear}</strong></span>
+          <span>Graduation Class of <strong>{student.graduationYear}</strong> <span className="text-blue-700 font-semibold font-mono">({getYearOfStudy(student.graduationYear)})</span></span>
         </div>
       </motion.div>
 
@@ -437,7 +438,7 @@ export const StudentDrivesView: React.FC<StudentDrivesViewProps> = ({
                                     {drive.criteria?.graduationYear && drive.criteria.graduationYear > 0 ? (
                                       <>
                                         <span aria-hidden="true">·</span>
-                                        <span>Target Batch: <strong className="text-slate-800 font-mono">{drive.criteria.graduationYear}</strong></span>
+                                        <span>Target Batch: <strong className="text-slate-800 font-mono">{drive.criteria.graduationYear}</strong> <span className="text-blue-700 font-medium">({getShortYearOfStudy(drive.criteria.graduationYear)})</span></span>
                                       </>
                                     ) : (
                                       <>

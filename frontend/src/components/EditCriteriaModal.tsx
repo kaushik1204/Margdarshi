@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { PlacementDrive, EligibilityCriteria, StudentProfile } from '../types/placement';
 import { api } from '../api/client';
 import { EligibilityService } from '../services/eligibilityService';
+import { TARGET_BATCH_OPTIONS, getShortYearOfStudy } from '../utils/academicYear';
 
 interface EditCriteriaModalProps {
   drive: PlacementDrive | null;
@@ -150,18 +151,12 @@ export const EditCriteriaModal: React.FC<EditCriteriaModalProps> = ({
                 <span>Target Student Year / Batch</span>
               </label>
               <span className="text-[10px] text-blue-700 font-medium font-mono">
-                {graduationYear > 0 ? `${graduationYear} Cohort` : 'All Batches'}
+                {graduationYear > 0 ? `${graduationYear} Batch (${getShortYearOfStudy(graduationYear)})` : 'All Batches'}
               </span>
             </div>
 
-            <div className="grid grid-cols-3 gap-1.5">
-              {[
-                { value: 2026, title: '2026 Batch', desc: '4th / Final' },
-                { value: 2027, title: '2027 Batch', desc: '3rd / Pre-Final' },
-                { value: 2028, title: '2028 Batch', desc: '2nd Year' },
-                { value: 2029, title: '2029 Batch', desc: '1st Year' },
-                { value: 0, title: 'All Years', desc: 'Open to All' },
-              ].map((opt) => {
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+              {TARGET_BATCH_OPTIONS.map((opt) => {
                 const isSelected = graduationYear === opt.value;
                 return (
                   <button

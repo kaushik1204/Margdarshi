@@ -71,6 +71,11 @@ public class ApplicationController {
             map.put("studentId", a.getStudent().getId());
             map.put("studentName", a.getStudent().getName());
             map.put("studentRoll", a.getStudent().getRollNumber());
+            map.put("studentBranch", a.getStudent().getBranch());
+            map.put("studentCgpa", a.getStudent().getCgpa());
+            map.put("studentEmail", a.getStudent().getEmail());
+            map.put("studentPhone", a.getStudent().getPhone());
+            map.put("studentResumePath", a.getStudent().getResumePath());
             map.put("driveId", a.getDrive().getId());
             map.put("driveName", a.getDrive().getRoleTitle());
             map.put("companyName", a.getDrive().getCompanyName());
@@ -170,6 +175,11 @@ public class ApplicationController {
         resp.put("studentId", student.getId());
         resp.put("studentName", student.getName());
         resp.put("studentRoll", student.getRollNumber());
+        resp.put("studentBranch", student.getBranch());
+        resp.put("studentCgpa", student.getCgpa());
+        resp.put("studentEmail", student.getEmail());
+        resp.put("studentPhone", student.getPhone());
+        resp.put("studentResumePath", student.getResumePath());
         resp.put("driveId", drive.getId());
         resp.put("companyApplicationId", app.getCompanyApplicationId());
         resp.put("selfReportStatus", app.getSelfReportStatus());

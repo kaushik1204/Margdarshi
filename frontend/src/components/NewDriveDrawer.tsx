@@ -34,7 +34,7 @@ export const NewDriveDrawer: React.FC<NewDriveDrawerProps> = ({
     'ECE',
     'AIML',
   ]);
-  const [targetGradYear, setTargetGradYear] = useState<string>('2026');
+  const [targetGradYear, setTargetGradYear] = useState<string>('2027');
   const [customGradYear, setCustomGradYear] = useState<string>('');
 
   // Dynamic recruitment stages (levels) configurable by coordinator
@@ -335,13 +335,14 @@ export const NewDriveDrawer: React.FC<NewDriveDrawerProps> = ({
                 </label>
                 <span className="text-[10px] text-blue-700 font-medium">Who can apply</span>
               </div>
-              
+
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                 {[
-                  { value: '2026', title: '2026 Batch', desc: '4th Year / Final' },
-                  { value: '2027', title: '2027 Batch', desc: '3rd Year / Pre-Final' },
-                  { value: '2028', title: '2028 Batch', desc: '2nd Year' },
-                  { value: '2029', title: '2029 Batch', desc: '1st Year' },
+                  { value: '2027', title: '2027 Batch', desc: '4th Year / Final' },
+                  { value: '2028', title: '2028 Batch', desc: '3rd Year / Pre-Final' },
+                  { value: '2029', title: '2029 Batch', desc: '2nd Year' },
+                  { value: '2030', title: '2030 Batch', desc: '1st Year' },
+                  { value: '2026', title: '2026 Batch', desc: 'Graduated / Alumni' },
                   { value: 'all', title: 'Open to All', desc: 'Any Student Year' },
                   { value: 'custom', title: 'Custom Batch', desc: 'Enter Year' },
                 ].map((opt) => {

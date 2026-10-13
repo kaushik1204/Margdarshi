@@ -33,11 +33,11 @@ export const FunnelDashboardModal: React.FC<FunnelDashboardModalProps> = ({
               id: app.id,
               name: app.studentName || 'Applicant Candidate',
               rollNo: app.studentRoll || '24EG107B47',
-              branch: 'CSE',
-              cgpa: 8.5,
+              branch: app.studentBranch || 'CSE',
+              cgpa: typeof app.studentCgpa === 'number' ? app.studentCgpa : (parseFloat(app.studentCgpa) || 8.5),
               stageId: activeStage,
               status: 'pending',
-              email: `${app.studentId || 'candidate'}@anurag.edu.in`,
+              email: app.studentEmail || `${app.studentRoll || app.studentId || 'candidate'}@anurag.edu.in`,
             };
           });
           setCandidateList(candidates);

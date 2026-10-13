@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Student } from '../types/placement';
+import { getShortYearOfStudy } from '../utils/academicYear';
 
 interface StudentsViewProps {
   students: Student[];
@@ -1203,7 +1204,7 @@ export const StudentsView: React.FC<StudentsViewProps> = ({ students }) => {
                     {selectedStudent.name}
                   </h3>
                   <p className="text-xs text-slate-500 font-mono mt-0.5">
-                    {selectedStudent.branch} Engineering • Cohort {selectedStudent.graduationYear || 2026}
+                    {selectedStudent.branch} Engineering • Cohort {selectedStudent.graduationYear || 2028} ({getShortYearOfStudy(selectedStudent.graduationYear || 2028)})
                   </p>
                 </div>
                 <button

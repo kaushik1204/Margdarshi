@@ -1,22 +1,30 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { PlacementDrive } from '../types/placement';
+import { PlacementDrive, StudentProfile } from '../types/placement';
 
 interface DriveSummaryModalProps {
   drive: PlacementDrive | null;
   isOpen: boolean;
   onClose: () => void;
+  student?: StudentProfile;
 }
 
 export const DriveSummaryModal: React.FC<DriveSummaryModalProps> = ({
   drive,
   isOpen,
   onClose,
+  student,
 }) => {
   if (!isOpen || !drive) return null;
 
   const mockOfferedStudents = [
-    { name: 'Kaushik Rekha', roll: '21AG1A0501', branch: 'CSE', cgpa: 8.85, status: 'Offer Letter Signed' },
+    {
+      name: student?.name || 'Kaushik Rekha',
+      roll: student?.rollNumber || '24EG107B47',
+      branch: student?.branch || 'CSE',
+      cgpa: student?.cgpa ?? 8.85,
+      status: 'Offer Letter Signed',
+    },
     { name: 'Ananya Deshmukh', roll: '21AG1A7302', branch: 'AIML', cgpa: 8.92, status: 'Offer Letter Signed' },
     { name: 'Karan Singhal', roll: '21AG1A0542', branch: 'CSE', cgpa: 8.74, status: 'Offer Letter Signed' },
     { name: 'Pooja Reddy', roll: '21AG1A0210', branch: 'ECE', cgpa: 8.65, status: 'Offer Letter Signed' },

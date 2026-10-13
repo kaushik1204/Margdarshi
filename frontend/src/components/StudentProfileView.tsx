@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { StudentProfile } from '../types/placement';
+import { getYearOfStudy } from '../utils/academicYear';
 
 interface StudentProfileViewProps {
   student: StudentProfile;
@@ -84,11 +85,18 @@ export const StudentProfileView: React.FC<StudentProfileViewProps> = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onUpdateStudent(formData);
-    setSaveFeedback(true);
-    setTimeout(() => setSaveFeedback(false), 3000);
+    setIsSaving(true);
+    try {
+      await onUpdateStudent(formData);
+      setSaveFeedback(true);
+      setTimeout(() => setSaveFeedback(false), 3500);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -236,12 +244,17 @@ export const StudentProfileView: React.FC<StudentProfileViewProps> = ({
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-slate-700">Graduation Class</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-700">Graduation Class</label>
+                  <span className="text-[10px] text-blue-700 font-semibold font-mono">
+                    {getYearOfStudy(formData.graduationYear)}
+                  </span>
+                </div>
                 <input
                   type="number"
                   value={formData.graduationYear}
                   onChange={(e) =>
-                    setFormData({ ...formData, graduationYear: parseInt(e.target.value, 10) || 2026 })
+                    setFormData({ ...formData, graduationYear: parseInt(e.target.value, 10) || 2028 })
                   }
                   className="w-full h-10 px-3.5 rounded-xl bg-slate-50 text-xs text-slate-900 font-mono border border-slate-200 outline-none focus:bg-white focus:border-blue-600"
                 />
@@ -348,12 +361,23 @@ export const StudentProfileView: React.FC<StudentProfileViewProps> = ({
 
             <div className="flex justify-end pt-3 border-t border-slate-100">
               <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                whileHover={!isSaving ? { scale: 1.02 } : {}}
+                whileTap={!isSaving ? { scale: 0.98 } : {}}
                 type="submit"
-                className="h-10 px-5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-all shadow-xs cursor-pointer"
+                disabled={isSaving}
+                className="h-10 px-5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-xs font-semibold transition-all shadow-xs cursor-pointer flex items-center gap-2"
               >
-                Save Academic Profile
+                {isSaving ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Saving Profile...</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined text-[16px]">save</span>
+                    <span>Save Academic Profile</span>
+                  </>
+                )}
               </motion.button>
             </div>
           </form>

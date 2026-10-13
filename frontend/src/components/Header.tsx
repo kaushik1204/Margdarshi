@@ -25,15 +25,15 @@ export const Header: React.FC<HeaderProps> = ({
 
   const displayName = isCoordinator
     ? (currentUser?.role === 'COORDINATOR' ? currentUser.name : 'Prof. R. Krishna')
-    : (currentUser?.role === 'STUDENT' ? currentUser.name : currentStudent.name);
+    : (currentStudent?.name || currentUser?.name || 'Student');
 
   const displaySubtitle = isCoordinator
     ? 'Placement Officer'
-    : (currentUser?.rollNumber || currentStudent.rollNumber);
+    : (currentStudent?.rollNumber || currentUser?.rollNumber || 'Candidate');
 
   const displayEmail = isCoordinator
     ? (currentUser?.role === 'COORDINATOR' ? currentUser.email : 'coordinator@anurag.edu.in')
-    : (currentUser?.role === 'STUDENT' ? currentUser.email : currentStudent.email);
+    : (currentStudent?.email || currentUser?.email || 'student@anurag.edu.in');
 
   return (
     <header className="fixed top-0 left-0 md:left-64 right-0 h-14 bg-white/95 backdrop-blur-md border-b border-slate-200/80 z-40 flex items-center justify-between px-4 sm:px-6 select-none">

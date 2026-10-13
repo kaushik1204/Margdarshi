@@ -248,12 +248,21 @@ class ApiClient {
       return normalizeStudent(s)!;
     },
 
-    update: async (id: string, data: Partial<StudentProfile>): Promise<StudentProfile> => {
-      const s = await this.request<any>(`/students/${id}`, {
+    update: async (id: string, data: Partial<StudentProfile>): Promise<StudentProfile & { token?: string; user?: AuthUser }> => {
+      const resp = await this.request<any>(`/students/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       });
-      return normalizeStudent(s)!;
+      if (resp.token) {
+        this.setToken(resp.token);
+      }
+      const s = resp.student || resp;
+      const normalized = normalizeStudent(s)!;
+      return {
+        ...normalized,
+        token: resp.token,
+        user: resp.user,
+      };
     },
   };
 
