@@ -9,7 +9,7 @@ import {
   PlacementResultRecord,
 } from '../types/placement';
 
-const API_BASE = '/api';
+const API_BASE = `${import.meta.env.VITE_API_BASE_URL || ''}/api`;
 const TOKEN_KEY = 'margdarshi_auth_token';
 
 interface ApiErrorResponse {
@@ -71,7 +71,7 @@ class ApiClient {
       } else {
         localStorage.removeItem(TOKEN_KEY);
       }
-    } catch {}
+    } catch { }
   }
 
   public clearToken(): void {
@@ -102,7 +102,7 @@ class ApiClient {
       let errBody: ApiErrorResponse = {};
       try {
         errBody = await response.json();
-      } catch {}
+      } catch { }
       const message = errBody.error || errBody.message || `Request failed with status ${response.status}`;
       throw new ApiError(message, response.status, errBody.reasons);
     }
